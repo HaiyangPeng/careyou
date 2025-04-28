@@ -54,16 +54,19 @@ DESCRIPTION = '''
 This model is finetuned on deepseek-r1.
 
 ## ✨ Functions
-[√]Provide an interactive chat interface for psychological consultation seekers.
-[×]Integrate knowledge retrieval 
-[×]Integrate web searching
-[×]Virtual mental companion 
+✅Provide an interactive chat interface for psychological consultation seekers.
+
+❌Integrate knowledge retrieval 
+
+❌Integrate web searching
+
+❌Virtual mental companion 
 
 ## 🙏 Acknowledgments
-We are grateful to Modelscope for supporting this project with resources.
+We are grateful to Modelscope for supporting this project with cloud inference resources.
 
 ## 🤝 Contributing
-Feel free to contribute to this project via our [github repo](https://github.com/HaiyangPeng/careyou)
+Feel free to contribute to this project via our [github repo](https://github.com/HaiyangPeng/careyou). Grow together!
 '''
 
 CSS = """
