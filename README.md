@@ -4,10 +4,13 @@
 This model is finetuned on deepseek-r1.
 
 ## ✨ Functions
-[√]Provide an interactive chat interface for psychological consultation seekers.
-[×]Integrate knowledge retrieval 
-[×]Integrate web searching
-[×]Virtual mental companion 
+✅Provide an interactive chat interface for psychological consultation seekers.
+
+❌Integrate knowledge retrieval 
+
+❌Integrate web searching
+
+❌Virtual mental companion 
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
