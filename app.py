@@ -177,17 +177,13 @@ def format_response(state, elapsed):
     return collapsible, answer_part
 
 def generate_response(history, temperature, top_p, max_tokens, active_gen):
-    # messages = [{"role": "user", "content": history[-1][0]}]
-    
     conversation = []
     for user, assistant in history[:-1]:
         conversation.extend([{"role": "user", "content": user}, {"role": "assistant", "content": assistant}])
     conversation.append({"role": "user", "content": prompt_style.format(history[-1][0])})
-    # conversation.append({"role": "user", "content": history[-1][0]})
 
-    input_ids = tokenizer.apply_chat_template(conversation, tokenize=False,add_generation_prompt=True)
-    print("input_ids: \n", input_ids, "\n")
-    input_ids = tokenizer([input_ids],return_tensors="pt").to(model.device)
+    input_ids = tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
+    input_ids = tokenizer([input_ids], return_tensors="pt").to(model.device)
 
     streamer = TextIteratorStreamer(tokenizer, timeout=20.0, skip_prompt=True, skip_special_tokens=True)
     generate_kwargs = dict(
@@ -195,14 +191,15 @@ def generate_response(history, temperature, top_p, max_tokens, active_gen):
         streamer=streamer,
         do_sample=True,
         max_new_tokens=max_tokens,
-    ) 
+    )
+
     t = Thread(target=model.generate, kwargs=generate_kwargs)
     t.start()
-    
+
     full_response = "<think>"
     state = ParserState()
     last_update = 0
-    
+
     try:
         for chunk in streamer:
             if not active_gen[0]:
@@ -211,22 +208,22 @@ def generate_response(history, temperature, top_p, max_tokens, active_gen):
             if chunk:
                 full_response += chunk
                 state, elapsed = parse_response(full_response, state)
-                
+
                 collapsible, answer_part = format_response(state, elapsed)
                 history[-1][1] = "\n\n".join(collapsible + [answer_part])
                 yield history
-        
-        # Final update to ensure all content is parsed
+
         state, elapsed = parse_response(full_response, state)
         collapsible, answer_part = format_response(state, elapsed)
         history[-1][1] = "\n\n".join(collapsible + [answer_part])
         yield history
-        
+
     except Exception as e:
         history[-1][1] = f"Error: {str(e)}"
         yield history
     finally:
         active_gen[0] = False
+        t.join()
 
 with gr.Blocks(css=CSS) as demo:
     gr.Markdown(DESCRIPTION)
@@ -288,7 +285,11 @@ with gr.Blocks(css=CSS) as demo:
         lambda: [False], None, active_gen, cancels=[submit_event]
     )
     
-    clear_btn.click(lambda: None, None, chatbot, queue=False)
+    clear_btn.click(
+        lambda: [False], None, active_gen, cancels=[submit_event]
+    ).then(
+        lambda: None, None, chatbot, queue=False
+    )
 
 if __name__ == "__main__":
     demo.queue(api_open=False, max_size=20, default_concurrency_limit=20).launch(server_name="0.0.0.0", server_port=7860, max_threads=40)
