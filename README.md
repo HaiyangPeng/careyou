@@ -12,6 +12,9 @@ This model is finetuned on deepseek-r1.
 
 ❌Virtual mental companion 
 
+## ⚠️ issue status
+- 2025.4.29 fix bug of clearing and stopping op.
+
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
 
