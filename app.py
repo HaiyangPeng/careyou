@@ -4,6 +4,8 @@ import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer, BitsAndBytesConfig
 from threading import Thread
+import requests
+import json
 
 print("downloading model")
 base_path = "model"
@@ -24,7 +26,7 @@ print("model loaded")
 
 prompt_style = """
 ### Instruction:
-你是Care，一个心理咨询AI助手，基于deepseek-r1微调模型，能够用专业的心理知识回答来访者的问题。每次回答问题的时候，先进行思考，并将思考过程放在<think>和</think>之间，然后再根据思考进行回答，回答放在</think>之后。
+你是Care，一个心理咨询AI助手，基于deepseek-r1微调模型，能够用专业的心理知识回答来访者的问题。每次回答问题前，需要结合联网搜索结果：{}进行思考，并将思考过程放在<think>和</think>之间，如果联网搜索结果为空，则自己思考，然后再根据思考进行回答，回答放在</think>之后。
 
 ### Question:
 {}
@@ -32,6 +34,34 @@ prompt_style = """
 ### Response:
 <think>
 """
+
+LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search"
+LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY') 
+def langsearch(query, max_results=5):
+    payload = json.dumps({
+    "query": query,
+    "freshness": "noLimit",
+    "summary": True,
+    "count": 10
+    })
+    headers = {
+    'Authorization': f'Bearer {LANGSEARCH_API_KEY}',
+    'Content-Type': 'application/json'
+    }
+    response = requests.request("POST", LANGSEARCH_API_URL, headers=headers, data=payload)
+    if response.status_code == 200:
+        print("Response Success: 200")
+        results = json.loads(response.text).get("data").get("webPages").get("value")
+        search_results = []
+        for result in results:
+            title = result.get("name", "")
+            snippet = result.get("snippet", "")
+            url = result.get("url", "")
+            search_results.append(f"标题: {title}\n摘要: {snippet}\n链接: {url}\n")
+        return "\n".join(search_results)
+    else:
+        print(f"Error: {response.status_code}")
+        return ""
 
 def format_time(seconds_float):
     total_seconds = int(round(seconds_float))
@@ -58,12 +88,13 @@ This model is finetuned on deepseek-r1.
 
 ❌Integrate knowledge retrieval 
 
-❌Integrate web searching
+✅Integrate web searching
 
 ❌Virtual mental companion 
 
 ## ⚠️ issue status
 - 2025.4.29 fix bug of clearing and stopping op.
+- 2025.5.3 web search supports.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
@@ -180,10 +211,17 @@ def format_response(state, elapsed):
     return collapsible, answer_part
 
 def generate_response(history, temperature, top_p, max_tokens, active_gen):
+    user_message = history[-1][0]
+    search_results = langsearch(user_message)
+    if search_results:
+        print("联网搜索结果：", search_results)
+    else:
+        print("未搜索到准确信息，将按照原始流程进行推理")
+
     conversation = []
     for user, assistant in history[:-1]:
         conversation.extend([{"role": "user", "content": user}, {"role": "assistant", "content": assistant}])
-    conversation.append({"role": "user", "content": prompt_style.format(history[-1][0])})
+    conversation.append({"role": "user", "content": prompt_style.format(user_message, search_results)})
 
     input_ids = tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
     input_ids = tokenizer([input_ids], return_tensors="pt").to(model.device)

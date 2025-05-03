@@ -8,12 +8,13 @@ This model is finetuned on deepseek-r1.
 
 ❌Integrate knowledge retrieval 
 
-❌Integrate web searching
+✅Integrate web searching
 
 ❌Virtual mental companion 
 
 ## ⚠️ issue status
 - 2025.4.29 fix bug of clearing and stopping op.
+- 2025.5.3 web search supports.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
