@@ -3,6 +3,12 @@
 ## 🚀 Overview
 This model is finetuned on deepseek-r1.
 
+  <a href="careyou"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/careyou.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/careyou.png">
+    <img alt="careyou logo" src="assets/careyou.png" height="310" style="max-width: 100%;">
+  </picture></a>
+
 ## ✨ Functions
 ✅Provide an interactive chat interface for psychological consultation seekers.
 
