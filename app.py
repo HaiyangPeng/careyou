@@ -6,11 +6,18 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 from threading import Thread
 import requests
 import json
+from rag.src.pipeline import EmoLLMRAG
 
 print("downloading model")
 base_path = "model"
 os.system(f"modelscope download --model haiyangpengai/careyou_7b_16bit_v3_2_qwen14_4bit --local_dir {base_path}")
 print("model downloaded")
+
+print("loading model")
+
+print("downloading libs")
+os.system(f"pip install faiss_gpu-1.7.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl")
+print("libs downloaded")
 
 print("loading model")
 
@@ -22,11 +29,12 @@ nf4_config = BitsAndBytesConfig(
 model = AutoModelForCausalLM.from_pretrained(base_path, quantization_config=nf4_config, torch_dtype=torch.bfloat16, device_map="auto")
 tokenizer = AutoTokenizer.from_pretrained(base_path, trust_remote_code=True)
 tokenizer.use_default_system_prompt = False
+rag_obj = EmoLLMRAG(model)
 print("model loaded")
 
 prompt_style = """
 ### Instruction:
-你是Care，一个心理咨询AI助手，基于deepseek-r1微调模型，能够用专业的心理知识回答来访者的问题。每次回答问题前，需要结合联网搜索结果：{}进行思考，并将思考过程放在<think>和</think>之间，如果联网搜索结果为空，则自己思考，然后再根据思考进行回答，回答放在</think>之后。
+你是Care，一个心理咨询AI助手，基于deepseek-r1微调模型，能够用专业的心理知识回答来访者的问题。每次回答问题前，需要结合联网搜索结果：{}以及本地知识库内容：{}进行思考，并将思考过程放在<think>和</think>之间，如果联网搜索结果和本地知识库内容均为空，则自己思考，然后再根据思考进行回答，回答放在</think>之后。
 
 ### Question:
 {}
@@ -221,9 +229,17 @@ def generate_response(history, temperature, top_p, max_tokens, active_gen):
     conversation = []
     for user, assistant in history[:-1]:
         conversation.extend([{"role": "user", "content": user}, {"role": "assistant", "content": assistant}])
-    conversation.append({"role": "user", "content": prompt_style.format(user_message, search_results)})
+
+    retrieval_content = rag_obj.get_retrieval_content(user_message)
+    if retrieval_content:
+        print("知识库搜索结果：", search_results)
+    else:
+        print("未搜索到准确信息，将按照原始流程进行推理")
+
+    conversation.append({"role": "user", "content": prompt_style.format(user_message, search_results, retrieval_content)})
 
     input_ids = tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
+    print("input_ids1: ", input_ids)
     input_ids = tokenizer([input_ids], return_tensors="pt").to(model.device)
 
     streamer = TextIteratorStreamer(tokenizer, timeout=20.0, skip_prompt=True, skip_special_tokens=True)
