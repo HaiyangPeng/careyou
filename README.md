@@ -1,7 +1,7 @@
-# 🧠 An AI assistant with extensive knowledge in psychology, and my name is Care. If this repo helps you, star and share it ❤️.
+# 🧠 An AI assistant with extensive knowledge in psychology, and my name is Care.
 
 ## 🚀 Overview
-This model is finetuned on deepseek-r1.
+This model is finetuned on deepseek-r1. If this repo helps you, star and share it ❤️.
 
   <a href="careyou"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/careyou.png">
