@@ -1,4 +1,4 @@
-# 🧠 An AI assistant with extensive knowledge in psychology, and my name is Care.
+# 🧠 An AI assistant with extensive knowledge in psychology, and my name is Care. If this repo helps you, star and share it ❤️.
 
 ## 🚀 Overview
 This model is finetuned on deepseek-r1.
@@ -25,6 +25,7 @@ This model is finetuned on deepseek-r1.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
+
 The rag codes are based on [EmoLLM](https://github.com/SmartFlowAI/EmoLLM)
 
 ## 🤝 Contributing
