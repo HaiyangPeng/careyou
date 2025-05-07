@@ -89,23 +89,29 @@ DESCRIPTION = '''
 # 🧠 An AI assistant with extensive knowledge in psychology, and my name is Care.
 
 ## 🚀 Overview
-This model is finetuned on deepseek-r1.
+This model is finetuned on deepseek-r1. If this repo helps you, star and share it ❤️. This repo will be continuously merged into EmoLLM.
 
 ## ✨ Functions
 ✅Provide an interactive chat interface for psychological consultation seekers.
 
-❌Integrate knowledge retrieval 
+✅Integrate knowledge retrieval 
 
 ✅Integrate web searching
+
+❌customized tts
 
 ❌Virtual mental companion 
 
 ## ⚠️ issue status
 - 2025.4.29 fix bug of clearing and stopping op.
 - 2025.5.3 web search supports.
+- 2025.5.5 rag supports. (demo code, needs to be checked)
+- 2025.5.7 fix bug of rag.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
+
+The rag codes are based on [EmoLLM](https://github.com/SmartFlowAI/EmoLLM)
 
 ## 🤝 Contributing
 Feel free to contribute to this project via our [github repo](https://github.com/HaiyangPeng/careyou). Grow together!
@@ -231,12 +237,13 @@ def generate_response(history, temperature, top_p, max_tokens, active_gen):
         conversation.extend([{"role": "user", "content": user}, {"role": "assistant", "content": assistant}])
 
     retrieval_content = rag_obj.get_retrieval_content(user_message)
+    retrieval_content = " ".join(retrieval_content)
     if retrieval_content:
-        print("知识库搜索结果：", search_results)
+        print("知识库搜索结果：", retrieval_content)
     else:
         print("未搜索到准确信息，将按照原始流程进行推理")
 
-    conversation.append({"role": "user", "content": prompt_style.format(user_message, search_results, retrieval_content)})
+    conversation.append({"role": "user", "content": prompt_style.format(search_results, retrieval_content, user_message)})
 
     input_ids = tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
     print("input_ids1: ", input_ids)
