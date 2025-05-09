@@ -6,7 +6,6 @@ os.system("cd careyou && ls")
 print("downloading libs")
 os.system(f"pip install careyou/faiss_gpu-1.7.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl")
 os.system(f"pip install -r careyou/requirements.txt")
-os.system(f"pip install tavily-python")
 print("libs downloaded")
 
 import time
@@ -18,9 +17,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 from threading import Thread
 import requests
 import json
-from tavily import TavilyClient
 from careyou.rag.src.pipeline import EmoLLMRAG
-client = TavilyClient(api_key=os.getenv('TAVILY_API_KEY'))
 
 LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search"
 LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY') 
