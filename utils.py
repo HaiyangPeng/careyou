@@ -182,12 +182,13 @@ def load_filepaths_and_text(filename, split="|"):
 
 
 def get_hparams(init=True, stage=1):
+    print(66666666666666666666666666666)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
         "--config",
         type=str,
-        default="./configs/s2.json",
+        default="careyou/configs/s2.json",
         help="JSON file for configuration",
     )
     parser.add_argument(
