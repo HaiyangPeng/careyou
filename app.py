@@ -29,6 +29,8 @@ os.system(f"modelscope download --model AI-ModelScope/GPT-SoVITS chinese-hubert-
 os.system(f"modelscope download --model AI-ModelScope/GPT-SoVITS chinese-roberta-wwm-ext-large --local_dir ./careyou/pretrained_models/")
 os.system(f"modelscope download --model X-D-Lab/TTS-GPT_SoVITS-sunshine_girl sunshine_girl.ckpt --local_dir ./careyou/models/sunny_girl/")
 os.system(f"modelscope download --model X-D-Lab/TTS-GPT_SoVITS-sunshine_girl sunshine_girl.pth --local_dir ./careyou/models/sunny_girl/")
+os.system("cd careyou/pretrained_models/chinese-roberta-wwm-ext-large && ls")
+os.system("cd careyou/pretrained_models && ls")
 print("model downloaded")
 
 print("loading model")
