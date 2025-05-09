@@ -31,7 +31,7 @@ chunk_size=1000
 chunk_overlap=100
 
 # vector DB
-vector_db_dir = "/home/studio_service/PROJECT/EmoLLMRAGTXT/vector_db"
+vector_db_dir = "/home/studio_service/PROJECT/careyou/EmoLLMRAGTXT/vector_db"
 
 # RAG related
 # select num: 代表rerank 之后选取多少个 documents 进入 LLM
