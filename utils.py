@@ -6,7 +6,7 @@ import logging
 import json
 import subprocess
 import traceback
-sys.path.append("/home/studio_service/PROJECT/careyou")
+
 import librosa
 import numpy as np
 from scipy.io.wavfile import read
@@ -188,7 +188,7 @@ def get_hparams(init=True, stage=1):
         "-c",
         "--config",
         type=str,
-        default="careyou/configs/s2.json",
+        default="/home/studio_service/PROJECT/careyou/configs/s2.json",
         help="JSON file for configuration",
     )
     parser.add_argument(
