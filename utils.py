@@ -12,7 +12,6 @@ import numpy as np
 from scipy.io.wavfile import read
 import torch
 import logging
-print(77777777777777)
 logging.getLogger("numba").setLevel(logging.ERROR)
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 

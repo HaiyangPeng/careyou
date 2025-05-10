@@ -16,7 +16,7 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 
 ✅Integrate web searching
 
-❌customized tts
+✅two customized tts (ISSUE: more voice models)
 
 ❌Virtual mental companion 
 
@@ -25,6 +25,8 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 - 2025.5.3 web search supports.
 - 2025.5.5 rag supports. (demo code, needs to be checked)
 - 2025.5.7 fix bug of rag.
+- 2025.5.9 tts supports.
+- 2025.5.10 two voice models.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
