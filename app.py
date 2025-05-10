@@ -1,13 +1,8 @@
 import os
-os.system("git config --global --unset http.proxy")
-os.system("git config --global --unset https.proxy")
-os.system("git clone https://github.com/HaiyangPeng/careyou.git")
-os.system("cd careyou && ls")
 print("downloading libs")
-os.system(f"pip install careyou/faiss_gpu-1.7.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl")
-os.system(f"pip install -r careyou/requirements.txt")
+os.system(f"pip install faiss_gpu-1.7.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl")
+os.system(f"pip install -r requirements.txt")
 print("libs downloaded")
-
 import time
 import gradio as gr
 import re
@@ -17,7 +12,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 from threading import Thread
 import requests
 import json
-from careyou.rag.src.pipeline import EmoLLMRAG
+from rag.src.pipeline import EmoLLMRAG
 
 LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search"
 LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY') 
@@ -25,12 +20,8 @@ LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY')
 print("downloading model")
 base_path = "model"
 os.system(f"modelscope download --model haiyangpengai/careyou_7b_16bit_v3_2_qwen14_4bit --local_dir {base_path}")
-os.system(f"modelscope download --model AI-ModelScope/GPT-SoVITS --local_dir ./careyou/pretrained_models/")
-os.system(f"modelscope download --model AI-ModelScope/GPT-SoVITS --local_dir ./careyou/pretrained_models/")
-os.system(f"modelscope download --model X-D-Lab/TTS-GPT_SoVITS-sunshine_girl --local_dir ./careyou/models/sunny_girl/")
-os.system(f"modelscope download --model X-D-Lab/TTS-GPT_SoVITS-sunshine_girl --local_dir ./careyou/models/sunny_girl/")
-os.system("cd careyou/pretrained_models/chinese-roberta-wwm-ext-large && ls")
-os.system("cd careyou/pretrained_models && ls")
+os.system(f"modelscope download --model haiyangpengai/careyou_tts --local_dir ./pretrained_models/")
+os.system("mv pretrained_models/sunny_girl models/")
 print("model downloaded")
 
 print("loading model")
@@ -390,14 +381,14 @@ def generate_response_and_tts(history, temperature, top_p, max_tokens, active_ge
 import pdb
 
 gpt_path = os.environ.get(
-    "gpt_path", "careyou/models/sunny_girl/sunshine_girl.ckpt"
+    "gpt_path", "models/sunny_girl/sunshine_girl.ckpt"
 )
-sovits_path = os.environ.get("sovits_path", "careyou/models/sunny_girl/sunshine_girl.pth")
+sovits_path = os.environ.get("sovits_path", "models/sunny_girl/sunshine_girl.pth")
 cnhubert_base_path = os.environ.get(
-    "cnhubert_base_path", "careyou/pretrained_models/chinese-hubert-base"
+    "cnhubert_base_path", "pretrained_models/chinese-hubert-base"
 )
 bert_path = os.environ.get(
-    "bert_path", "careyou/pretrained_models/chinese-roberta-wwm-ext-large"
+    "bert_path", "pretrained_models/chinese-roberta-wwm-ext-large"
 )
 infer_ttswebui = os.environ.get("infer_ttswebui", 9872)
 infer_ttswebui = int(infer_ttswebui)
@@ -408,20 +399,21 @@ import gradio as gr
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 import numpy as np
 import librosa,torch
-from careyou.feature_extractor import cnhubert
+from feature_extractor import cnhubert
 cnhubert.cnhubert_base_path=cnhubert_base_path
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 import nltk
-os.system("cp -r careyou/nltk_data /root/")
+os.system("cp -r nltk_data /root/")
 
-from careyou.module.models import SynthesizerTrn
-from careyou.AR.models.t2s_lightning_module import Text2SemanticLightningModule
-from careyou.text import cleaned_text_to_sequence
-from careyou.text.cleaner import clean_text
+from module.models import SynthesizerTrn
+from AR.models.t2s_lightning_module import Text2SemanticLightningModule
+from text import cleaned_text_to_sequence
+from text.cleaner import clean_text
 from time import time as ttime
-from careyou.module.mel_processing import spectrogram_torch
+from module.mel_processing import spectrogram_torch
 from my_utils import load_audio
+
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 is_half = eval(
@@ -483,9 +475,10 @@ if is_half == True:
     ssl_model = ssl_model.half().to(device)
 else:
     ssl_model = ssl_model.to(device)
-
+print(333333333333333333333333)
 def change_sovits_weights(sovits_path):
     global vq_model,hps
+    print(os.path.isfile(sovits_path), 2222222)
     dict_s2=torch.load(sovits_path,map_location="cpu")
     hps=dict_s2["config"]
     hps = DictToAttrRecursive(hps)
@@ -827,7 +820,7 @@ def load_audio_text_mappings(folder_path, list_file_name):
                 audio_to_text_mappings[audio_file_path] = text
     return text_to_audio_mappings, audio_to_text_mappings
 
-audio_folder_path = 'careyou/audio/sunny_girl'
+audio_folder_path = 'audio/sunny_girl'
 text_to_audio_mappings, audio_to_text_mappings = load_audio_text_mappings(audio_folder_path, 'slicer_opt.list')
 
 with gr.Blocks(css=CSS) as demo:
