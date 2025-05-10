@@ -21,7 +21,7 @@ print("downloading model")
 base_path = "model"
 os.system(f"modelscope download --model haiyangpengai/careyou_7b_16bit_v3_2_qwen14_4bit --local_dir {base_path}")
 os.system(f"modelscope download --model haiyangpengai/careyou_tts --local_dir ./pretrained_models/")
-os.system("mv pretrained_models/sunny_girl models/")
+os.system("mv pretrained_models/heart_girl models/")
 print("model downloaded")
 
 print("loading model")
@@ -381,9 +381,9 @@ def generate_response_and_tts(history, temperature, top_p, max_tokens, active_ge
 import pdb
 
 gpt_path = os.environ.get(
-    "gpt_path", "models/sunny_girl/sunshine_girl.ckpt"
+    "gpt_path", "models/heart_girl/sunshine_girl.ckpt"
 )
-sovits_path = os.environ.get("sovits_path", "models/sunny_girl/sunshine_girl.pth")
+sovits_path = os.environ.get("sovits_path", "models/heart_girl/sunshine_girl.pth")
 cnhubert_base_path = os.environ.get(
     "cnhubert_base_path", "pretrained_models/chinese-hubert-base"
 )
@@ -820,7 +820,7 @@ def load_audio_text_mappings(folder_path, list_file_name):
                 audio_to_text_mappings[audio_file_path] = text
     return text_to_audio_mappings, audio_to_text_mappings
 
-audio_folder_path = 'audio/sunny_girl'
+audio_folder_path = 'audio/heart_girl'
 text_to_audio_mappings, audio_to_text_mappings = load_audio_text_mappings(audio_folder_path, 'slicer_opt.list')
 
 with gr.Blocks(css=CSS) as demo:
