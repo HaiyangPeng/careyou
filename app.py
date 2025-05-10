@@ -381,9 +381,9 @@ def generate_response_and_tts(history, temperature, top_p, max_tokens, active_ge
 import pdb
 
 gpt_path = os.environ.get(
-    "gpt_path", "models/heart_girl/sunshine_girl.ckpt"
+    "gpt_path", "models/heart_girl/heartful_sister.ckpt"
 )
-sovits_path = os.environ.get("sovits_path", "models/heart_girl/sunshine_girl.pth")
+sovits_path = os.environ.get("sovits_path", "models/heart_girl/heartful_sister.pth")
 cnhubert_base_path = os.environ.get(
     "cnhubert_base_path", "pretrained_models/chinese-hubert-base"
 )
