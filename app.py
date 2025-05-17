@@ -130,6 +130,7 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 - 2025.5.7 fix bug of rag.
 - 2025.5.9 tts supports.
 - 2025.5.10 two voice models.
+- 2025.5.16 merge into EmoLLM.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.

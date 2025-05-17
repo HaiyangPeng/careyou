@@ -3,11 +3,9 @@
 ## 🚀 Overview
 This model is finetuned on deepseek-r1. If this repo helps you, star and share it ❤️. This repo will be continuously merged into EmoLLM.
 
-  <a href="careyou"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/careyou.png">
-    <source media="(prefers-color-scheme: light)" srcset="assets/careyou.png">
-    <img alt="careyou logo" src="assets/careyou.png" height="310" style="max-width: 100%;">
-  </picture></a>
+<td colspan="3" align="center" style="background-color: transparent;">
+    <img src="assets\careyou.png" alt="占位图" style="width: 100%; height: auto;">
+</td>
 
 ## ✨ Functions
 ✅Provide an interactive chat interface for psychological consultation seekers.
@@ -27,6 +25,13 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 - 2025.5.7 fix bug of rag.
 - 2025.5.9 tts supports.
 - 2025.5.10 two voice models.
+- 2025.5.16 merge into EmoLLM.
+
+## 🤖 How to run
+The code can be directly run on modelscope gpu. If you do not have this resource, please modify some details to run it on your local server.
+- step1: create a repo named careyou in modelscope and copy all the files under `careyou` to the repo.
+- step2: obtain langsearch API key (free) and set it as an env var `LANGSEARCH_API_KEY`.
+- step3: run the application through modelscope platform.
 
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
