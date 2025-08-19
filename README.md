@@ -1,7 +1,7 @@
 # 🧠 An AI assistant with extensive knowledge in psychology, and my name is Care.
 
 ## 🚀 Overview
-This model is finetuned on deepseek-r1. If this repo helps you, star and share it ❤️. This repo will be continuously merged into EmoLLM.
+This model is finetuned on deepseek-r1. If this repo helps you, star and share it ❤️. This repo will be continuously merged into EmoLLM. You can try Care in [ModelScope](https://modelscope.cn/studios/haiyangpengai/careyou)
 
 <td colspan="3" align="center" style="background-color: transparent;">
     <img src="assets\careyou.png" alt="占位图" style="width: 100%; height: auto;">
@@ -17,6 +17,8 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 ✅two customized tts (ISSUE: more voice models)
 
 ❌Virtual mental companion 
+
+❌Optimized tts 
 
 ## ⚠️ issue status
 - 2025.4.29 fix bug of clearing and stopping op.
