@@ -13,14 +13,13 @@ from threading import Thread
 import requests
 import json
 from rag.src.pipeline import EmoLLMRAG
-import numpy as np
 
-LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search   "
+LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search"
 LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY') 
 
 print("downloading model")
 base_path = "model"
-os.system(f"modelscope download --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B --local_dir {base_path}")
+os.system(f"modelscope download --model haiyangpengai/careyou_7b_16bit_v3_2_qwen14_4bit --local_dir {base_path}")
 os.system(f"modelscope download --model haiyangpengai/careyou_tts --local_dir ./pretrained_models/")
 os.system("mv pretrained_models/heart_girl models/")
 print("model downloaded")
@@ -32,7 +31,7 @@ nf4_config = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
 )
 
-model = AutoModelForCausalLM.from_pretrained(base_path, device_map="auto")
+model = AutoModelForCausalLM.from_pretrained(base_path, quantization_config=nf4_config, torch_dtype=torch.bfloat16, device_map="auto")
 tokenizer = AutoTokenizer.from_pretrained(base_path, trust_remote_code=True)
 tokenizer.use_default_system_prompt = False
 rag_obj = EmoLLMRAG(model)
