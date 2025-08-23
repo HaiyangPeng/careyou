@@ -16,6 +16,8 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 
 ✅two customized tts (ISSUE: more voice models)
 
+✅Display the consuming time of generating voice with the streaming way
+
 ❌Virtual mental companion 
 
 ❌Optimized tts 
@@ -28,6 +30,7 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 - 2025.5.9 tts supports.
 - 2025.5.10 two voice models.
 - 2025.5.16 merge into EmoLLM.
+- 2025.8.22 display the time of streaming voice.
 
 ## 🤖 How to run
 The code can be directly run on modelscope gpu. If you do not have this resource, please modify some details to run it on your local server.
