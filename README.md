@@ -18,9 +18,7 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 
 ✅Display the consuming time of generating voice with the streaming way
 
-❌Virtual mental companion 
-
-❌Optimized tts 
+❌Virtual mental companion
 
 ## ⚠️ issue status
 - 2025.4.29 fix bug of clearing and stopping op.
