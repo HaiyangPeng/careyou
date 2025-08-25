@@ -13,9 +13,11 @@ from threading import Thread
 import requests
 import json
 from rag.src.pipeline import EmoLLMRAG
+import numpy as np
+import librosa
 
-LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search"
-LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY') 
+LANGSEARCH_API_URL = "https://api.langsearch.com/v1/web-search "
+LANGSEARCH_API_KEY = os.getenv('LANGSEARCH_API_KEY')
 
 print("downloading model")
 base_path = "model"
@@ -84,7 +86,7 @@ def tavily_search(query, max_results=5):
             "url": result.get("url", ""),
             "title": result.get("title", "")
         } for idx, result in enumerate(search_results.get("results", []))]
-        
+
         for idx, result in enumerate(search_result):
             search_info += f"{idx + 1}. 标题：{result.get('title', '')}\n   链接：{result.get('url', '')}\n"
     except Exception as e:
@@ -98,7 +100,7 @@ def format_time(seconds_float):
     remaining_seconds = total_seconds % 3600
     minutes = remaining_seconds // 60
     seconds = remaining_seconds % 60
-    
+
     if hours > 0:
         return f"{hours}h {minutes}m {seconds}s"
     elif minutes > 0:
@@ -138,10 +140,10 @@ This model is finetuned on deepseek-r1. If this repo helps you, star and share i
 ## 🙏 Acknowledgments
 We are grateful to Modelscope for supporting this project with resources.
 
-The rag codes are based on [EmoLLM](https://github.com/SmartFlowAI/EmoLLM)
+The rag codes are based on [EmoLLM](https://github.com/SmartFlowAI/EmoLLM )
 
 ## 🤝 Contributing
-Feel free to contribute to this project via our [github repo](https://github.com/HaiyangPeng/careyou). Grow together!
+Feel free to contribute to this project via our [github repo](https://github.com/HaiyangPeng/careyou ). Grow together!
 '''
 
 CSS = """
@@ -201,7 +203,7 @@ class ParserState:
 def parse_response(text, state):
     buffer = text[state.last_pos:]
     state.last_pos = len(text)
-    
+
     while buffer:
         if not state.in_think:
             think_start = buffer.find('<think>')
@@ -225,7 +227,7 @@ def parse_response(text, state):
             else:
                 state.thought += buffer
                 break
-    
+
     elapsed = time.perf_counter() - state.start_time if state.in_think else 0
     return state, elapsed
 
@@ -307,7 +309,7 @@ def generate_response(history, temperature, top_p, max_tokens, active_gen):
         active_gen[0] = False
         t.join()
 
-def generate_response_and_tts(history, temperature, top_p, max_tokens, active_gen, 
+def generate_response_and_tts(history, temperature, top_p, max_tokens, active_gen,
                               audio_select, ref_text, prompt_language, text_language, how_to_cut):
     user_message = history[-1][0]
     search_results = langsearch(user_message)
@@ -345,79 +347,40 @@ def generate_response_and_tts(history, temperature, top_p, max_tokens, active_ge
 
     full_response = "<think>"
     state = ParserState()
-    
-    accumulated_audio = []
-    processed_text_len = 0
-    sentence_delimiters = re.compile('([,.:;?!~。，、：；？！～\n])')
-    sample_rate = hps.data.sampling_rate
-    
+    last_update = 0
+
     try:
-        # 生成过程中，显示增量音频但不自动播放
         for chunk in streamer:
             if not active_gen[0]:
                 break
             print(chunk, end="", flush=True)
-            if not chunk:
-                continue
+            if chunk:
+                full_response += chunk
+                state, elapsed = parse_response(full_response, state)
 
-            full_response += chunk
-            state, elapsed = parse_response(full_response, state)
-            collapsible, answer_part = format_response(state, elapsed)
-            history[-1][1] = "\n\n".join(collapsible + [answer_part])
-            
-            unprocessed_text = answer_part[processed_text_len:]
-            parts = sentence_delimiters.split(unprocessed_text)
-            
-            text_to_process = ""
-            if len(parts) > 1:
-                text_to_process = "".join(parts[:-1])
-                processed_text_len += len(text_to_process)
-            
-            if text_to_process.strip():
-                _, audio_chunk = get_tts_wav(
-                    audio_select, ref_text, prompt_language, 
-                    text_to_process, text_language, "不切"
-                )
-                if audio_chunk.size > 0:
-                    accumulated_audio.append(audio_chunk)
-            
-            # 修改点：生成过程中不传递音频数据，只显示进度信息
-            if accumulated_audio:
-                combined_audio = np.concatenate(accumulated_audio)
-                audio_duration = len(combined_audio) / sample_rate
-                # 只显示音频长度信息，不传递实际音频数据
-                progress_info = f"🎵 已生成音频: {audio_duration:.1f}秒"
-                history[-1][1] = "\n\n".join([collapsible[0] if collapsible else "", answer_part, progress_info])
-            
-            yield history, None, None
+                collapsible, answer_part = format_response(state, elapsed)
+                history[-1][1] = "\n\n".join(collapsible + [answer_part])
+                yield history, None, "0s"
 
-        # 处理最后的文本片段
-        final_text_fragment = answer_part[processed_text_len:]
-        if final_text_fragment.strip():
-            _, audio_chunk = get_tts_wav(
-                audio_select, ref_text, prompt_language, 
-                final_text_fragment, text_language, "不切"
-            )
-            if audio_chunk.size > 0:
-                accumulated_audio.append(audio_chunk)
+        state, elapsed = parse_response(full_response, state)
+        collapsible, answer_part = format_response(state, elapsed)
+        history[-1][1] = "\n\n".join(collapsible + [answer_part])
 
-        # 最终输出：只在这里第一次传递音频数据
-        if accumulated_audio:
-            final_audio = np.concatenate(accumulated_audio)
-            audio_duration = len(final_audio) / sample_rate
-            final_info = f"✅ 音频生成完成: {audio_duration:.1f}秒"
-            # 移除进度信息，添加完成信息
-            collapsible, answer_part = format_response(state, 0)
-            history[-1][1] = "\n\n".join([collapsible[0] if collapsible else "", answer_part, final_info])
-            
-            # 只在最后传递音频数据到显示组件（供查看）和播放组件（自动播放）
-            yield history, gr.Audio(value=(sample_rate, final_audio), autoplay=False), gr.Audio(value=(sample_rate, final_audio), autoplay=True)
-        else:
-            yield history, None, None
+        answer_text = answer_part.replace('<think>', '').replace('</think>', '').strip()
+
+        for audio_chunk, conversion_time in get_tts_wav(
+            audio_select,
+            ref_text,
+            prompt_language,
+            answer_text,
+            text_language,
+            how_to_cut
+        ):
+            yield history, audio_chunk, conversion_time
 
     except Exception as e:
         history[-1][1] = f"Error: {str(e)}"
-        yield history, None, None
+        yield history, None, "Error"
     finally:
         active_gen[0] = False
         t.join()
@@ -476,14 +439,16 @@ def get_bert_feature(text, word2ph):
     with torch.no_grad():
         inputs = tokenizer_bert(text, return_tensors="pt")
         for i in inputs:
-            inputs[i] = inputs[i].to(device)  
+            inputs[i] = inputs[i].to(device)
         res = bert_model(**inputs, output_hidden_states=True)
         res = torch.cat(res["hidden_states"][-3:-2], -1)[0].cpu()[1:-1]
     assert len(word2ph) == len(text)
+    # print("word2ph: ", word2ph)
     phone_level_feature = []
     for i in range(len(word2ph)):
         repeat_feature = res[i].repeat(word2ph[i], 1)
         phone_level_feature.append(repeat_feature)
+    # print("phone_level_feature: ", phone_level_feature)
     phone_level_feature = torch.cat(phone_level_feature, dim=0)
     return phone_level_feature.T
 
@@ -519,9 +484,10 @@ if is_half == True:
     ssl_model = ssl_model.half().to(device)
 else:
     ssl_model = ssl_model.to(device)
-
+print(333333333333333333333333)
 def change_sovits_weights(sovits_path):
     global vq_model,hps
+    print(os.path.isfile(sovits_path), 2222222)
     dict_s2=torch.load(sovits_path,map_location="cpu")
     hps=dict_s2["config"]
     hps = DictToAttrRecursive(hps)
@@ -653,43 +619,35 @@ def nonen_get_bert_inf(text, language):
 
     return bert
 
-def get_tts_wav(selected_text, prompt_text, prompt_language, text, text_language,how_to_cut=("不切")):
+def get_tts_wav(selected_text, prompt_text, prompt_language, text, text_language, how_to_cut=("不切")):
     ref_wav_path = text_to_audio_mappings.get(selected_text, "")
     if not ref_wav_path:
-        return hps.data.sampling_rate, np.array([], dtype=np.int16)
-        
+        print("Audio file not found for the selected text.")
+        return
+
     prompt_text = prompt_text.strip("\n")
     text = text.strip("\n")
-    
-    if not text:
-        return hps.data.sampling_rate, np.array([], dtype=np.int16)
 
-    t0 = ttime()
     zero_wav = np.zeros(
         int(hps.data.sampling_rate * 0.3),
-        dtype=np.float16 if is_half == True else np.float32,
+        dtype=np.float16 if is_half else np.float32,
     )
 
     with torch.no_grad():
         wav16k, sr = librosa.load(ref_wav_path, sr=16000)
         wav16k = torch.from_numpy(wav16k)
         zero_wav_torch = torch.from_numpy(zero_wav)
-        if is_half == True:
+        if is_half:
             wav16k = wav16k.half().to(device)
             zero_wav_torch = zero_wav_torch.half().to(device)
         else:
             wav16k = wav16k.to(device)
             zero_wav_torch = zero_wav_torch.to(device)
-        wav16k=torch.cat([wav16k,zero_wav_torch])
-        ssl_content = ssl_model.model(wav16k.unsqueeze(0))[
-            "last_hidden_state"
-        ].transpose(
-            1, 2
-        )
+        wav16k = torch.cat([wav16k, zero_wav_torch])
+        ssl_content = ssl_model.model(wav16k.unsqueeze(0))["last_hidden_state"].transpose(1, 2)
         codes = vq_model.extract_latent(ssl_content)
         prompt_semantic = codes[0, 0]
-    t1 = ttime()
-    
+
     prompt_language = dict_language[prompt_language]
     text_language = dict_language[text_language]
 
@@ -698,40 +656,47 @@ def get_tts_wav(selected_text, prompt_text, prompt_language, text, text_language
     else:
         phones1, word2ph1, norm_text1 = nonen_clean_text_inf(prompt_text, prompt_language)
 
-    if(how_to_cut==("凑五句一切")):text=cut1(text)
-    elif(how_to_cut==("凑50字一切")):text=cut2(text)
-    elif(how_to_cut==("按中文句号。切")):text=cut3(text)
-    elif(how_to_cut==("按英文句号.切")):text=cut4(text)
+    if how_to_cut == ("凑五句一切"):
+        text = cut1(text)
+    elif how_to_cut == ("凑50字一切"):
+        text = cut2(text)
+    elif how_to_cut == ("按中文句号。切"):
+        text = cut3(text)
+    elif how_to_cut == ("按英文句号.切"):
+        text = cut4(text)
 
-    text = text.replace("\n\n","\n").replace("\n\n","\n").replace("\n\n","\n")
     if text and text[-1] not in splits:
         text += "。" if text_language != "en" else "."
 
     texts = text.split("\n")
-    audio_opt = []
-    
+    total_conversion_time = 0.0
+
     if prompt_language == "en":
         bert1 = get_bert_inf(phones1, word2ph1, norm_text1, prompt_language)
     else:
         bert1 = nonen_get_bert_inf(prompt_text, prompt_language)
 
-    for text_segment in texts:
-        if not text_segment.strip():
+    for text_chunk in texts:
+        if not text_chunk.strip():
             continue
-            
+
+        start_time = time.time()
+
         if text_language == "en":
-            phones2, word2ph2, norm_text2 = clean_text_inf(text_segment, text_language)
+            phones2, word2ph2, norm_text2 = clean_text_inf(text_chunk, text_language)
+        else:
+            phones2, word2ph2, norm_text2 = nonen_clean_text_inf(text_chunk, text_language)
+
+        if text_language == "en":
             bert2 = get_bert_inf(phones2, word2ph2, norm_text2, text_language)
         else:
-            phones2, word2ph2, norm_text2 = nonen_clean_text_inf(text_segment, text_language)
-            bert2 = nonen_get_bert_inf(text_segment, text_language)
-        
+            bert2 = nonen_get_bert_inf(text_chunk, text_language)
+
         bert = torch.cat([bert1, bert2], 1)
         all_phoneme_ids = torch.LongTensor(phones1 + phones2).to(device).unsqueeze(0)
         bert = bert.to(device).unsqueeze(0)
         all_phoneme_len = torch.tensor([all_phoneme_ids.shape[-1]]).to(device)
         prompt = prompt_semantic.unsqueeze(0).to(device)
-        t2 = ttime()
 
         with torch.no_grad():
             pred_semantic, idx = t2s_model.model.infer_panel(
@@ -742,47 +707,53 @@ def get_tts_wav(selected_text, prompt_text, prompt_language, text, text_language
                 top_k=config["inference"]["top_k"],
                 early_stop_num=hz * max_sec,
             )
-        t3 = ttime()
-        
+
         pred_semantic = pred_semantic[:, -idx:].unsqueeze(0)
         refer = get_spepc(hps, ref_wav_path)
         if is_half:
             refer = refer.half().to(device)
         else:
             refer = refer.to(device)
-        
-        audio = (
-            vq_model.decode(
-                pred_semantic, torch.LongTensor(phones2).to(device).unsqueeze(0), refer
-            )
-            .detach()
-            .cpu()
-            .numpy()[0, 0]
-        ) 
-        audio_opt.append(audio)
-        audio_opt.append(zero_wav)
-        t4 = ttime()
-    print("%.3f\t%.3f\t%.3f\t%.3f" % (t1 - t0, t2 - t1, t3 - t2, t4 - t3))
-    return hps.data.sampling_rate, (np.concatenate(audio_opt, 0) * 32768).astype(
-        np.int16
-    )
+
+        audio_chunk = vq_model.decode(
+            pred_semantic, torch.LongTensor(phones2).to(device).unsqueeze(0), refer
+        ).detach().cpu().numpy()[0, 0]
+
+        end_time = time.time()
+        conversion_duration = end_time - start_time
+        total_conversion_time += conversion_duration
+
+        audio_with_pause = np.concatenate([audio_chunk, zero_wav])
+        yield (hps.data.sampling_rate, (audio_with_pause * 32768).astype(np.int16)), format_time(total_conversion_time)
 
 
 splits = {
-    "，", "。", "？", "！", ",", ".", "?", "!", "~", ":", "：", "—", "…",
-}  
+    "，",
+    "。",
+    "？",
+    "！",
+    ",",
+    ".",
+    "?",
+    "!",
+    "~",
+    ":",
+    "：",
+    "—",
+    "…",
+}
 
 
 def split(todo_text):
     todo_text = todo_text.replace("……", "。").replace("——", "，")
-    if todo_text and todo_text[-1] not in splits:
+    if todo_text[-1] not in splits:
         todo_text += "。"
     i_split_head = i_split_tail = 0
     len_text = len(todo_text)
     todo_texts = []
     while 1:
         if i_split_head >= len_text:
-            break 
+            break
         if todo_text[i_split_head] in splits:
             i_split_head += 1
             todo_texts.append(todo_text[i_split_tail:i_split_head])
@@ -823,7 +794,7 @@ def cut2(inp):
             tmp_str = ""
     if tmp_str != "":
         opts.append(tmp_str)
-    if len(opts) > 1 and len(opts[-1]) < 50: 
+    if len(opts) > 1 and len(opts[-1]) < 50:
         opts[-2] = opts[-2] + opts[-1]
         opts = opts[:-1]
     return "\n".join(opts)
@@ -832,12 +803,12 @@ def cut2(inp):
 def cut3(inp):
     inp = inp.strip("\n")
     return "\n".join(["%s。" % item for item in inp.strip("。").split("。")])
-
 def cut4(inp):
     inp = inp.strip("\n")
     return "\n".join(["%s." % item for item in inp.strip(".").split(".")])
 
 def scan_audio_files(folder_path):
+    """ 扫描指定文件夹获取音频文件列表 """
     return [f for f in os.listdir(folder_path) if f.endswith('.wav')]
 
 def load_audio_text_mappings(folder_path, list_file_name):
@@ -861,7 +832,7 @@ with gr.Blocks(css=CSS) as demo:
     gr.Markdown(DESCRIPTION)
 
     active_gen = gr.State([False])
-    
+
     chatbot = gr.Chatbot(
         elem_id="chatbot",
         height=500,
@@ -877,12 +848,11 @@ with gr.Blocks(css=CSS) as demo:
             scale=4
         )
         submit_btn = gr.Button("Send", variant='primary', scale=1)
-    
+
     with gr.Column(scale=2):
         with gr.Row():
             clear_btn = gr.Button("Clear", variant='secondary')
             stop_btn = gr.Button("Stop", variant='stop')
-        
         with gr.Accordion("Parameters", open=False):
             temperature = gr.Slider(minimum=0.1, maximum=1.5, value=0.6, label="Temperature")
             top_p = gr.Slider(minimum=0.1, maximum=1.0, value=0.95, label="Top-p")
@@ -898,27 +868,27 @@ with gr.Blocks(css=CSS) as demo:
         label="咨询例子"
     )
 
-    DEFAULT_AUDIO_SELECT = list(text_to_audio_mappings.keys())[0]
-    DEFAULT_REF_TEXT = list(text_to_audio_mappings.keys())[0]
+    tts_time_display = gr.Textbox(label="TTS Conversion Time", value="0s", interactive=False)
+    output_audio = gr.Audio(label="converted voice", streaming=True, autoplay=True)
+
+
+    DEFAULT_AUDIO_SELECT = list(text_to_audio_mappings.keys())[0] if text_to_audio_mappings else ""
+    DEFAULT_REF_TEXT = DEFAULT_AUDIO_SELECT
     DEFAULT_PROMPT_LANGUAGE = "中文"
     DEFAULT_TEXT_LANGUAGE = "中文"
     DEFAULT_HOW_TO_CUT = "不切"
-
-    # 两个音频组件：一个用于显示，一个用于播放
-    display_audio = gr.Audio(label="生成进度 (可查看波形)", autoplay=False, visible=True)
-    output_audio = gr.Audio(label="自动播放", autoplay=False, visible=False)  # 隐藏但用于自动播放
 
     submit_event = submit_btn.click(
         user, [msg, chatbot], [msg, chatbot], queue=False
     ).then(
         lambda: [True], outputs=active_gen
     ).then(
-        generate_response_and_tts, 
-        [chatbot, temperature, top_p, max_tokens, active_gen, 
-         gr.State(DEFAULT_AUDIO_SELECT), gr.State(DEFAULT_REF_TEXT), 
-         gr.State(DEFAULT_PROMPT_LANGUAGE), gr.State(DEFAULT_TEXT_LANGUAGE), 
-         gr.State(DEFAULT_HOW_TO_CUT)], 
-        [chatbot, display_audio, output_audio]  # 修改：输出到两个音频组件
+        generate_response_and_tts,
+        [chatbot, temperature, top_p, max_tokens, active_gen,
+         gr.State(DEFAULT_AUDIO_SELECT), gr.State(DEFAULT_REF_TEXT),
+         gr.State(DEFAULT_PROMPT_LANGUAGE), gr.State(DEFAULT_TEXT_LANGUAGE),
+         gr.State(DEFAULT_HOW_TO_CUT)],
+        [chatbot, output_audio, tts_time_display]
     )
 
     msg.submit(
@@ -926,23 +896,25 @@ with gr.Blocks(css=CSS) as demo:
     ).then(
         lambda: [True], outputs=active_gen
     ).then(
-        generate_response_and_tts, 
-        [chatbot, temperature, top_p, max_tokens, active_gen, 
-         gr.State(DEFAULT_AUDIO_SELECT), gr.State(DEFAULT_REF_TEXT), 
-         gr.State(DEFAULT_PROMPT_LANGUAGE), gr.State(DEFAULT_TEXT_LANGUAGE), 
-         gr.State(DEFAULT_HOW_TO_CUT)], 
-        [chatbot, display_audio, output_audio]  # 修改：输出到两个音频组件
+        generate_response_and_tts,
+        [chatbot, temperature, top_p, max_tokens, active_gen,
+         gr.State(DEFAULT_AUDIO_SELECT), gr.State(DEFAULT_REF_TEXT),
+         gr.State(DEFAULT_PROMPT_LANGUAGE), gr.State(DEFAULT_TEXT_LANGUAGE),
+         gr.State(DEFAULT_HOW_TO_CUT)],
+        [chatbot, output_audio, tts_time_display]
     )
+
 
     stop_btn.click(
         lambda: [False], None, active_gen, cancels=[submit_event]
     )
-    
+
     clear_btn.click(
-        lambda: [False], None, active_gen, cancels=[submit_event]
+        lambda: (None, None, "0s"), None, [chatbot, output_audio, tts_time_display], queue=False
     ).then(
-        lambda: (None, None, None), None, [chatbot, display_audio, output_audio], queue=False  # 修改：清理两个音频组件
+        lambda: [False], None, active_gen, cancels=[submit_event]
     )
+
 
 
 if __name__ == "__main__":
